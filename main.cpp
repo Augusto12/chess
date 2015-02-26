@@ -12,51 +12,43 @@ void imprimir_tabuleiro(char vetor[8][9])
 		cout << endl;
 	}
 }
-/*void mover_peca(char vetor[8][9])
+
+bool cor_peca(char tabuleiro[8][9], int l, int c)
 {
-	int l1, c1, l2, c2, t;
-	cout << "Escolha uma peça: " << endl;
-	cin >> l1 >> c1;
-	cout << "Escolha a nova posição da peça: " << endl;
-	cin >> l2 >> c2;
-	t=vetor[l1][c1];
-	vetor[l1][c1]=vetor[l2][c2];
-	vetor[l2][c2]=t;
-	imprimir_tabuleiro(vetor);
-}*/
-void mover_peao(char vetor[8][9])
+	//TODO: fazer de um jeito mais eficiente
+	char peca = tabuleiro[l][c];
+	if (peca == 'K' || peca == 'Q' || peca == 'B' || peca == 'N' || peca == 'R' || peca == 'P')
+		return false;
+	else
+		return true;
+}
+
+bool mover_peao(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
 {
-	int l1, c1, l2, c2, t;
-	cout << "Escolha um peao: " << endl;
-	cin >> l1 >> c1;
-	cout << "Escolha a nova posição da peça: " << endl;
-	cin >> l2 >> c2;
-	if (vetor[l1][c1]=='P')
+	bool branco = cor_peca(tabuleiro, l1, c1);
+	bool move = false;
+	if (c1 == c2)
 	{
-		if (l1==1 && (vetor[l1+1][c1+1]==' ' || vetor[l1+1][c1-1]==' ') && l2<=l1+2 && l2>l1 && c2==c1)
-		{
-			std::swap(vetor[l1][c1], vetor[l2][c2]);
-			imprimir_tabuleiro(vetor);
-		}
-		if (l1!=1 && (vetor[l1+1][c1+1]==' ' || vetor[l1+1][c1-1]==' ') && l2==l1+1 && c2==c1)
-		{
-			t=vetor[l1][c1];
-			vetor[l1][c1]=vetor[l2][c2];
-			vetor[l2][c2]=t;
-			imprimir_tabuleiro(vetor);
-		}
-		/*if((l2>l1+1 && l1!=1) || c2!=c1)
-		cout << "Posicao invalida" << endl;*/
-		if (c2!=c1 && (c2<c1+2 || c2>c1-2) && (vetor[l1+1][c1+1]!=' ' || vetor[l1+1][c1-1]!=' '))		
-		{
-			t=vetor[l1][c1];
-			vetor[l1][c1]=vetor[l2][c2];
-			vetor[l2][c2]=t;
-			imprimir_tabuleiro(vetor);
-		}
-		else
-			cout << "Posicao invalida" << endl;
+		if ((l2-l1 == (branco ? -1 : 1) && tabuleiro[l2][c2] == ' ') ||
+			(l2-l1 == (branco ? -2 : 2) && tabuleiro[l2][c2] == ' ' && tabuleiro[l2 + (branco ? 1 : -1)][c2] == ' '))
+			move = true;
 	}
+	else if (c1-c2 == 1 || c2-c1 == 1)
+	{
+		//TODO: implementar funçao se é inimigo
+		if (l2-l1 == (branco ? -1 : 1) && tabuleiro[l2][c2] != ' ' && branco == cor_peca[l2][c2])
+			move = true;
+	}
+
+	if (move)
+	{
+		tabuleiro[l2][c2] = tabuleiro[l1][c1];
+		tabuleiro[l1][c1] = ' ';
+		return true;
+	}
+	
+	return false;
+
 }
 
 int main()
@@ -72,12 +64,16 @@ int main()
 							"rnbqkbnr"};
 	while (1)
 	{
-		cout << "Deseja mover uma peça?" << endl;
-		cin >> a;
-		if (a=='s')
-			mover_peao(tabuleiro);
-		else
-			break;
+		imprimir_tabuleiro(tabuleiro);
+		
+		int l1, c1, l2, c2;
+		cout << "Escolha um peao: " << endl;
+		cin >> l1 >> c1;
+		cout << "Escolha a nova posição da peça: " << endl;
+		cin >> l2 >> c2;
+
+		mover_peao(tabuleiro, l1, c1, l2, c2);
 	}
+
 	return 0;
 }
