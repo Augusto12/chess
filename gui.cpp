@@ -3,20 +3,13 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 
-ALLEGRO_BITMAP* whiteImage;
+
+ALLEGRO_BITMAP* whiteboard;
 int w, h;
 ALLEGRO_BITMAP* pawnImage;
 
-char board[8][9] = {"RNBQKBNR",
-                    "PPPPPPPP",
-                    "        ",
-                    "        ",
-                    "        ",
-                    "        ",
-                    "pppppppp",
-                    "rnbqkbnr"};
 
-void draw_chess_pieces(int x, int y)
+void draw_chess_pieces(int x, int y, char board[8][9])
 {
   bool isWhite;
   ALLEGRO_BITMAP* pieceImage;
@@ -25,7 +18,7 @@ void draw_chess_pieces(int x, int y)
   {
     for (int j = 0; j < 8; ++j)
     {
-      char piece = board[j][i];
+      char piece = board[i][j];
 
       if (piece == ' ')
         continue;
@@ -55,10 +48,10 @@ void draw_chess_board(int x, int y)
 {
   for (int i = 0; i < 8; ++i)
     for (int j = 0; j < 8; ++j)
-      al_draw_tinted_bitmap(whiteImage,
-                            ((i + j) % 2 == 1) ?
-                              al_map_rgb(0x77, 0x77, 0x77) :
-                              al_map_rgb(0xff, 0xff, 0xff),
+      al_draw_tinted_bitmap(whiteboard,
+                            ((i + j) % 2 == 0) ?
+                              al_map_rgb(0xff, 0xff, 0xff) :
+                              al_map_rgb(0x77, 0x77, 0x77),
                             x + j * w, y + i * h,
                             0);
 }
@@ -80,14 +73,14 @@ int main(int argc, char** argv)
 
   // Bitmaps
   al_init_image_addon();
-  whiteImage = al_load_bitmap("imgs/white.png");
-  if (!whiteImage)
+  whiteboard = al_load_bitmap("imgs/white.png");
+  if (!whiteboard)
   {
     printf("Failed to load whiteImage!\n");
     return -1;
   }
-  w = al_get_bitmap_width (whiteImage),
-  h = al_get_bitmap_height(whiteImage);
+  w = al_get_bitmap_width (whiteboard),
+  h = al_get_bitmap_height(whiteboard);
 
   pawnImage = al_load_bitmap("imgs/pawn.png");
   if (!pawnImage)
@@ -95,6 +88,16 @@ int main(int argc, char** argv)
     printf("Failed to load pawnImage\n");
     return -1;
   }
+
+  // Chess board
+  char board[8][9] = {"RNBQKBNR",
+                      "PPPPPPPP",
+                      "        ",
+                      "        ",
+                      "        ",
+                      "        ",
+                      "pppppppp",
+                      "rnbqkbnr"};
 
   // Main loop
   bool sair = false;
@@ -125,8 +128,8 @@ int main(int argc, char** argv)
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
     // Render
-    draw_chess_board(0, 0);
-    draw_chess_pieces(0, 0);
+    draw_chess_board (0, 0);
+    draw_chess_pieces(0, 0, board);
 
     al_flip_display();
   }
