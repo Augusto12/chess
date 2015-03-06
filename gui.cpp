@@ -6,7 +6,12 @@
 
 ALLEGRO_BITMAP* whiteboard;
 int w, h;
-ALLEGRO_BITMAP* pawnImage;
+ALLEGRO_BITMAP* pawnImage,
+              * rookImage,
+              * knightImage,
+              * bishopImage,
+              * queenImage,
+              * kingImage;
 
 
 void draw_chess_pieces(int x, int y, char board[8][9])
@@ -30,15 +35,24 @@ void draw_chess_pieces(int x, int y, char board[8][9])
       else
         isWhite = false;
 
-      //if (piece == 'p' || piece == 'P')
+      if (piece == 'p' || piece == 'P')
         pieceImage = pawnImage;
-      //
+      else if (piece == 'r' || piece == 'R')
+        pieceImage = rookImage;
+      else if (piece == 'n' || piece == 'N')
+        pieceImage = knightImage;
+      else if (piece == 'b' || piece == 'B')
+        pieceImage = bishopImage;
+      else if (piece == 'q' || piece == 'Q')
+        pieceImage = queenImage;
+      else if (piece == 'k' || piece == 'K')
+        pieceImage = kingImage;
 
       al_draw_tinted_bitmap(pieceImage,
                             isWhite ?
                               al_map_rgb(0xff, 0xff, 0xff) :
                               al_map_rgb(0x22, 0x22, 0x22),
-                            x + i * w, y + j * h,
+                            x + j * w, y + i * h,
                             0);
     }
   }
@@ -82,10 +96,16 @@ int main(int argc, char** argv)
   w = al_get_bitmap_width (whiteboard),
   h = al_get_bitmap_height(whiteboard);
 
-  pawnImage = al_load_bitmap("imgs/pawn.png");
-  if (!pawnImage)
+  pawnImage   = al_load_bitmap("imgs/pawn.png");
+  rookImage   = al_load_bitmap("imgs/rook.png");
+  knightImage = al_load_bitmap("imgs/knight.png");
+  bishopImage = al_load_bitmap("imgs/bishop.png");
+  queenImage  = al_load_bitmap("imgs/queen.png");
+  kingImage   = al_load_bitmap("imgs/king.png");
+  if (!pawnImage || !rookImage || !knightImage || !bishopImage ||
+      !queenImage || !kingImage)
   {
-    printf("Failed to load pawnImage\n");
+    printf("Failed to load image\n");
     return -1;
   }
 
