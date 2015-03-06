@@ -152,6 +152,19 @@ bool mover_rainha(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
 		return false;
 }
 
+bool mover_rei(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
+{
+	if (abs(l2 - l1) > 1 || abs(c2 - c1) > 1 || (l1 == l2 && c2 == c1))
+		return false;
+	if (abs(l2 - l1) <= 1 && abs(c2 - c1) <= 1 && (tabuleiro[l2][c2] == ' ' || cor_peca(tabuleiro, l1, c1) != cor_peca(tabuleiro, l2, c2)))
+	{
+		tabuleiro[l2][c2] = tabuleiro[l1][c1];
+		tabuleiro[l1][c1] = ' ';
+		return true;
+	}
+	return false;
+}
+
 bool escolher_destino(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
 {
 	char peca = tabuleiro[l1][c1];
@@ -165,6 +178,8 @@ bool escolher_destino(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
 		return mover_bispo(tabuleiro, l1, c1, l2, c2);
 	if (peca == 'q' || peca == 'Q')
 		return mover_rainha(tabuleiro, l1, c1, l2, c2);
+	if (peca == 'k' || peca == 'K')
+		return mover_rei(tabuleiro, l1, c1, l2, c2);
 }
 
 int main()
@@ -178,7 +193,8 @@ int main()
 							"        ",
 							"pppppppp",
 							"rnbqkbnr"};
-	Cor corjogador = BRANCO;
+	
+	int contador = 0;
 	while (1)
 	{
 		imprimir_tabuleiro(tabuleiro);
@@ -186,22 +202,21 @@ int main()
 		int l1, c1, l2, c2;
 		cout << "Escolha uma peça: " << endl;
 		cin >> l1 >> c1;
-		
-		/*if (!selecionar_peca(tabuleiro, l1, c1, corjogador))
+		if (!selecionar_peca(tabuleiro, l1, c1, (contador % 2 == 0 ? BRANCO : PRETO)))
 		{	
 			cout << "Peça inválida" << endl;
 			continue;
-		}*/
+		}
 
 		cout << "Escolha a nova posição da peça: " << endl;
 		cin >> l2 >> c2;
+		
 		if(!escolher_destino(tabuleiro, l1, c1, l2, c2))
 		{		
 			cout << "Destino inválido" << endl;
 			continue;
 		}
-
-
+		contador ++;
 	}
 
 	return 0;
