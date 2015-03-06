@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 
   // Bitmaps
   al_init_image_addon();
-  whiteImage = al_load_bitmap("white.png");
+  whiteImage = al_load_bitmap("imgs/white.png");
   if (!whiteImage)
   {
     printf("Failed to load whiteImage!\n");
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
   w = al_get_bitmap_width (whiteImage),
   h = al_get_bitmap_height(whiteImage);
 
-  pawnImage = al_load_bitmap("pawn.png");
+  pawnImage = al_load_bitmap("imgs/pawn.png");
   if (!pawnImage)
   {
     printf("Failed to load pawnImage\n");
