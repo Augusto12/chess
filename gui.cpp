@@ -51,7 +51,7 @@ void draw_chess_pieces(int x, int y, char board[8][9])
       al_draw_tinted_bitmap(pieceImage,
                             isWhite ?
                               al_map_rgb(0xff, 0xff, 0xff) :
-                              al_map_rgb(0x22, 0x22, 0x22),
+                              al_map_rgb(0x44, 0x44, 0x44),
                             x + j * w, y + i * h,
                             0);
     }
