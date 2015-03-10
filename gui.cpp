@@ -3,6 +3,8 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 
+#include "moves.h"
+
 
 ALLEGRO_BITMAP* whiteboard;
 int w, h;
@@ -120,9 +122,16 @@ int main(int argc, char** argv)
                       "rnbqkbnr"};
 
   // Main loop
+  int jogada = 0;
+  bool selecting = true;
+  int sl, sc;
+
   bool sair = false;
   while (!sair)
   {
+    Cor corjogador = (jogada % 2 == 0 ? BRANCO : PRETO);
+    bool acted = false;
+
     ALLEGRO_EVENT event;
     while (!al_is_event_queue_empty(eventQueue))
     {
@@ -135,15 +144,54 @@ int main(int argc, char** argv)
         break;
 
         case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
-          printf("mouse down: %d %d %u\n",
-                 event.mouse.x / w, event.mouse.y / h,
-                 event.mouse.button);
+          {
+            if (event.mouse.button != 1)
+              break;
+            if (acted)
+              break;
+
+            int c = event.mouse.x / w,
+                l = event.mouse.y / h;
+
+            if (selecting)
+            {
+              if (selecionar_peca(board, l, c, corjogador))
+              {
+                //printf("select: %d %d\n", l, c);
+                sl = l;
+                sc = c;
+                acted = true;
+              }
+              else
+                printf("Invalid position!\n");
+            }
+            else
+            {
+              if (l == sl && c == sc)
+              {
+                printf("Deselected piece!\n");
+                acted = true;
+              }
+              else if (escolher_destino(board, sl, sc, l, c))
+              {
+                //printf("dest: %d %d\n", l, c);
+                printf("%c%d-%c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
+                acted = true;
+                jogada++;
+              }
+              else
+                printf("Invalid destination!\n");
+            }
+          }
         break;
 
         default:
         break;
       }
     }
+
+    if (acted)
+      selecting = !selecting;
 
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
