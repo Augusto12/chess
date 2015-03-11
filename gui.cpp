@@ -175,7 +175,7 @@ int main(int argc, char** argv)
               else if (escolher_destino(board, sl, sc, l, c))
               {
                 //printf("dest: %d %d\n", l, c);
-                printf("%c%d-%c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
+                printf("%c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
                 acted = true;
                 jogada++;
               }
