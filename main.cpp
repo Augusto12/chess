@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+
 using namespace std;
 
 enum Cor
@@ -164,14 +165,33 @@ bool mover_rei(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
 	}
 	return false;
 }
-
-bool escolher_destino(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
+//posicao_rei é um vetor em que as posições 0 e 1 correspondem as coordenadas da linha e da coluna do rei branco, respectivamente, e as 
+//posições 2 e 3 correspondem as coordenadas do rei preto.
+/*bool xeque(char tabuleiro[8][9], int posicao_rei[4])
+{
+	if(cor_peca == BRANCO && )
+}*/
+bool escolher_destino(char tabuleiro[8][9], int l1, int c1, int l2, int c2, bool movido[6])
 {
 	char peca = tabuleiro[l1][c1];
 	if (peca == 'p' || peca == 'P')
 		return mover_peao(tabuleiro, l1, c1, l2, c2);
 	if (peca == 'r' || peca == 'R')
-		return mover_torre(tabuleiro, l1, c1, l2, c2);
+	{	
+		bool m = mover_torre(tabuleiro, l1, c1, l2, c2);
+		if (m)
+		{
+			if (l1 == 0 && c1 == 0)	
+				movido[3] = true;
+			else if (l1 == 0 && c1 == 7)
+				movido[5] = true;
+			if (l1 == 7 && c1 == 0)
+				movido[0] = true;
+			else if (l1 == 7 && c1 == 7)
+				movido[2] = true;
+		}
+		return m;	
+	}
 	if (peca == 'n' || peca == 'N')
 		return mover_cavalo(tabuleiro, l1, c1, l2, c2);
 	if (peca == 'b' || peca == 'B')
@@ -179,7 +199,37 @@ bool escolher_destino(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
 	if (peca == 'q' || peca == 'Q')
 		return mover_rainha(tabuleiro, l1, c1, l2, c2);
 	if (peca == 'k' || peca == 'K')
-		return mover_rei(tabuleiro, l1, c1, l2, c2);
+	{	
+		bool m1 = mover_rei(tabuleiro, l1, c1, l2, c2);
+		if(m1)
+		{
+			if (l1 == 7 && c1 == 4)
+				movido[1] = true;
+			if (l1 == 0 && c1 == 4)
+				movido[4] = true;
+		}
+		//Para o vetor movido, os índices 0, 1, 2, 3, 4 e 5 denotam respectivamente as peças nas posições (7,0), (7,4), (7,7), (0,0), (0,4) e (0,7) 
+		if (abs(c2 - c1) == 2 && l2 == l1)
+		{
+			if (c2 > c1 && !movido[cor_peca(tabuleiro, l1, c1) == BRANCO ? 1 : 4] && !movido[cor_peca(tabuleiro, l1, c1 + 3) == BRANCO ? 2 : 5]
+				&& (tabuleiro[l1][c1 + 1] == ' ' && tabuleiro[l1][c1 + 2] == ' '))
+			{
+				swap(tabuleiro[l1][c1], tabuleiro[l2][c2]);
+				swap(tabuleiro[l1][c1 + 3], tabuleiro[l1][c2 - 1]);
+				return true;
+			}
+
+			if (c2 < c1 && !movido[cor_peca(tabuleiro, l1, c1) == BRANCO ? 1 : 4] && !movido[cor_peca(tabuleiro, l1, c1 - 4) == BRANCO ? 0 : 3]
+				&& (tabuleiro[l1][c1-1] == ' ' && tabuleiro[l1][c1-2] == ' ' && tabuleiro[l1][c1-3] == ' '))
+			{
+				swap(tabuleiro[l1][c1], tabuleiro[l2][c2]);
+				swap(tabuleiro[l1][c1 - 4], tabuleiro[l1][c2 + 1]);
+				return true;
+			}
+		}
+		else	
+			return mover_rei(tabuleiro, l1, c1, l2, c2);
+	}
 }
 
 int main()
@@ -190,11 +240,13 @@ int main()
 							"        ",
 							"        ",
 							"        ",
-							"        ",
+							"     bn ",
 							"pppppppp",
-							"rnbqkbnr"};
+							"rnbqk  r"};
 	
 	int contador = 0;
+	bool movido[6] = {false};
+		
 	while (1)
 	{
 		imprimir_tabuleiro(tabuleiro);
@@ -211,7 +263,7 @@ int main()
 		cout << "Escolha a nova posição da peça: " << endl;
 		cin >> l2 >> c2;
 		
-		if(!escolher_destino(tabuleiro, l1, c1, l2, c2))
+		if(!escolher_destino(tabuleiro, l1, c1, l2, c2, movido))
 		{		
 			cout << "Destino inválido" << endl;
 			continue;
