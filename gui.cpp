@@ -1,6 +1,24 @@
 #include <cstdio>
 #include <string.h>
 
+#define PLATFORM_WINDOWS 1
+#define PLATFORM_LINUX   2
+
+#if defined(_WIN32)
+  #define PLATFORM PLATFORM_WINDOWS
+#else
+  #define PLATFORM PLATFORM_LINUX
+#endif
+
+#if PLATFORM == PLATFORM_WINDOWS
+
+#include <winsock2.h>
+#define errno WSAGetLastError()
+#undef EAGAIN
+#define EAGAIN WSAEWOULDBLOCK
+
+#elif PLATFORM == PLATFORM_LINUX
+
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -9,10 +27,16 @@
 #include <net/if.h>
 #include <errno.h>
 
+#endif
+
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 
 #include "moves.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma comment(lib, "wsock32.lib")
+#endif
 
 ALLEGRO_BITMAP* whiteboard;
 int w, h;
@@ -133,6 +157,15 @@ int main(int argc, char** argv)
   unsigned short port = 30000;
   bool server;
 
+#if PLATFORM == PLATFORM_WINDOWS
+  WSADATA WsaData;
+  if(WSAStartup( MAKEWORD(2,2),  &WsaData ) == NO_ERROR)
+  {
+    perror("Failed to start winsock");
+    return -1;
+  }
+#endif
+
   int sockfd, serverfd;
   if (argc == 1)
   {
@@ -153,15 +186,18 @@ int main(int argc, char** argv)
     }
 
     // IP Address
+#if PLATFORM == PLATFORM_LINUX
     ifreq ifr;
     ifr.ifr_addr.sa_family = AF_INET;
     strncpy(ifr.ifr_name, "wlan0", IFNAMSIZ-1);
     ioctl(serverfd, SIOCGIFADDR, &ifr);
     printf("IP Address: %s\n", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+#endif
 
     listen(serverfd, 1);
     printf("Waiting for player!\n");
 
+    // TODO (naum-20150313): Do this as non-blocking
     sockaddr_in connaddr;
     socklen_t connlen = sizeof(connaddr);
     sockfd = accept(serverfd,
@@ -181,7 +217,11 @@ int main(int argc, char** argv)
 
     sockaddr_in addr;
     addr.sin_family = AF_INET;
+#if PLATFORM == PLATFORM_WINDOWS
+    addr.sin_addr.s_addr = inet_addr(argv[1]);
+#elif PLATFORM == PLATFORM_LINUX
     inet_aton(argv[1], &addr.sin_addr);
+#endif
     addr.sin_port = htons(port);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -193,11 +233,20 @@ int main(int argc, char** argv)
     }
   }
 
-  if (fcntl(sockfd, F_SETFL, O_NONBLOCK, 1) == -1)
+#if PLATFORM == PLATFORM_WINDOWS
+  DWORD nonBlocking = 1;
+  if (ioctlsocket(sockfd, FIONBIO, &nonBlocking) != 0)
   {
-    printf("Failed to set non-blocking\n");
+    perror("Failed to set non-blocking");
     return -1;
   }
+#elif PLATFORM == PLATFORM_LINUX
+  if (fcntl(sockfd, F_SETFL, O_NONBLOCK, 1) == -1)
+  {
+    perror("Failed to set non-blocking");
+    return -1;
+  }
+#endif
 
   // Main loop
   Cor corjogador = (server ? BRANCO : PRETO);
@@ -216,18 +265,28 @@ int main(int argc, char** argv)
     char buffer[256];
     if (corjogada != corjogador)
     {
-      if (read(sockfd, buffer, 256) < 0)
+      int bytesRead;
+#if PLATFORM == PLATFORM_WINDOWS
+      bytesRead = recv(sockfd, buffer, 256, 0);
+#elif PLATFORM == PLATFORM_LINUX
+      bytesRead = read(sockfd, buffer, 256);
+#endif
+      if (bytesRead < 0)
       {
         if (errno != EAGAIN)
         {
           perror("ERROR reading from socket");
-          break;
+          sair = true;
         }
+      }
+      else if (bytesRead == 0)
+      {
+        printf("Connection closed!\n");
+        sair = true;;
       }
       else
       {
         int l, c;
-        //printf("buffer: %s\n", buffer);
         sscanf(buffer, "%d %d %d %d", &sl, &sc, &l, &c);
         printf("Opponent movement: %c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
         if (sl >= 0 && sl < 8 && sc >= 0 && sc < 8 &&
@@ -235,7 +294,6 @@ int main(int argc, char** argv)
         {
           escolher_destino(board, sl, sc, l, c, movido);
           jogada++;
-          //continue;
         }
         else
         {
@@ -291,8 +349,17 @@ int main(int argc, char** argv)
               else if (escolher_destino(board, sl, sc, l, c, movido))
               {
                 sprintf(buffer, "%d %d %d %d", sl, sc, l, c);
-                write(sockfd, buffer, strlen(buffer) + 1);
-                //printf("buffer: (%s)\n", buffer);
+                int packet_size = strlen(buffer) + 1;
+#if PLATFORM == PLATFORM_WINDOWS
+                int sent_bytes = send(sockfd, buffer, packet_size, 0);
+#elif PLATFORM == PLATFORM_LINUX
+                int sent_bytes = write(sockfd, buffer, packet_size);
+#endif
+                if (sent_bytes != packet_size)
+                {
+                  perror("ERROR sending packet:");
+                  sair = true;
+                }
 
                 printf("Movement: %c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
                 acted = true;
@@ -324,8 +391,14 @@ int main(int argc, char** argv)
   al_destroy_display(display);
   al_destroy_event_queue(eventQueue);
 
-  if (sockfd >= 0) close(sockfd);
+#if PLATFORM == PLATFORM_WINDOWS
+  if (sockfd >= 0)   closesocket(sockfd);
+  if (serverfd >= 0) closesocket(serverfd);
+  WSACleanup();
+#elif PLATFORM == PLATFORM_LINUX
+  if (sockfd >= 0)   close(sockfd);
   if (serverfd >= 0) close(serverfd);
+#endif
 
   return 0;
 }
