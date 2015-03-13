@@ -16,7 +16,7 @@ ALLEGRO_BITMAP* pawnImage,
               * kingImage;
 
 
-void draw_chess_pieces(int x, int y, char board[8][9])
+void draw_chess_pieces(int x, int y, char board[8][9], bool invert)
 {
   bool isWhite;
   ALLEGRO_BITMAP* pieceImage;
@@ -25,7 +25,7 @@ void draw_chess_pieces(int x, int y, char board[8][9])
   {
     for (int j = 0; j < 8; ++j)
     {
-      char piece = board[i][j];
+      char piece = board[(invert ? 7 - i : i)][(invert ? 7 - j : j)];
 
       if (piece == ' ')
         continue;
@@ -60,7 +60,7 @@ void draw_chess_pieces(int x, int y, char board[8][9])
   }
 }
 
-void draw_chess_board(int x, int y)
+void draw_chess_board(int x, int y, bool invert)
 {
   for (int i = 0; i < 8; ++i)
     for (int j = 0; j < 8; ++j)
@@ -68,7 +68,7 @@ void draw_chess_board(int x, int y)
                             ((i + j) % 2 == 0) ?
                               al_map_rgb(0xff, 0xff, 0xff) :
                               al_map_rgb(0x77, 0x77, 0x77),
-                            x + j * w, y + i * h,
+                            x + (invert ? 7 - j : j) * w, y + (invert ? 7 - i : i) * h,
                             0);
 }
 
@@ -196,8 +196,8 @@ int main(int argc, char** argv)
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
     // Render
-    draw_chess_board (0, 0);
-    draw_chess_pieces(0, 0, board);
+    draw_chess_board (0, 0, true);
+    draw_chess_pieces(0, 0, board, true);
 
     al_flip_display();
   }
