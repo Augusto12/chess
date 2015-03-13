@@ -1,10 +1,18 @@
 #include <cstdio>
+#include <string.h>
+
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <errno.h>
 
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 
 #include "moves.h"
-
 
 ALLEGRO_BITMAP* whiteboard;
 int w, h;
@@ -121,7 +129,78 @@ int main(int argc, char** argv)
                       "pppppppp",
                       "rnbqkbnr"};
 
+  // Networking
+  unsigned short port = 30000;
+  bool server;
+
+  int sockfd, serverfd;
+  if (argc == 1)
+  {
+    server = true;
+
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+
+    serverfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (bind(serverfd,
+             (const sockaddr*) &addr,
+             sizeof(sockaddr_in)) < 0)
+    {
+      perror("Failed to bind socket");
+      return -1;
+    }
+
+    // IP Address
+    ifreq ifr;
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name, "wlan0", IFNAMSIZ-1);
+    ioctl(serverfd, SIOCGIFADDR, &ifr);
+    printf("IP Address: %s\n", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+
+    listen(serverfd, 1);
+    printf("Waiting for player!\n");
+
+    sockaddr_in connaddr;
+    socklen_t connlen = sizeof(connaddr);
+    sockfd = accept(serverfd,
+                    (sockaddr*) &connaddr,
+                    &connlen);
+    if (sockfd < 0)
+    {
+      perror("Failed to accept connection");
+      return -1;
+    }
+
+    printf("Connected: %s\n", inet_ntoa(connaddr.sin_addr));
+  }
+  else if (argc == 2)
+  {
+    server = false;
+
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    inet_aton(argv[1], &addr.sin_addr);
+    addr.sin_port = htons(port);
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect(sockfd, (sockaddr*) &addr, sizeof(addr)) < 0)
+    {
+      //printf("ERROR connecting!\n");
+      perror("ERROR connecting");
+      return -1;
+    }
+  }
+
+  if (fcntl(sockfd, F_SETFL, O_NONBLOCK, 1) == -1)
+  {
+    printf("Failed to set non-blocking\n");
+    return -1;
+  }
+
   // Main loop
+  Cor corjogador = (server ? BRANCO : PRETO);
   int jogada = 0;
   bool selecting = true;
   int sl, sc;
@@ -129,8 +208,43 @@ int main(int argc, char** argv)
   bool sair = false;
   while (!sair)
   {
-    Cor corjogador = (jogada % 2 == 0 ? BRANCO : PRETO);
+    Cor corjogada = (jogada % 2 == 0 ? BRANCO : PRETO);
     bool acted = false;
+
+    // 
+    char buffer[256];
+    if (corjogada != corjogador)
+    {
+      if (read(sockfd, buffer, 256) < 0)
+      {
+        if (errno != EAGAIN)
+        {
+          perror("ERROR reading from socket");
+          break;
+        }
+      }
+      else
+      {
+        int l, c;
+        //printf("buffer: %s\n", buffer);
+        printf("jogada: %d\n", jogada);
+        sscanf(buffer, "%d %d %d %d", &sl, &sc, &l, &c);
+        printf("Opponent movement: %c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
+        if (sl >= 0 && sl < 8 && sc >= 0 && sc < 8 &&
+            l >= 0 && l < 8 && c >= 0 && c < 8)
+        {
+          board[l][c] = board[sl][sc];
+          board[sl][sc] = ' ';
+          jogada++;
+          printf("jogada: %d\n", jogada);
+          //continue;
+        }
+        else
+        {
+          printf("Invalid opponent movement!\n");
+        }
+      }
+    }
 
     ALLEGRO_EVENT event;
     while (!al_is_event_queue_empty(eventQueue))
@@ -145,22 +259,26 @@ int main(int argc, char** argv)
 
         case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
           {
-            if (event.mouse.button != 1)
-              break;
-            if (acted)
-              break;
+            if (corjogada != corjogador) break;
+            if (event.mouse.button != 1) break;
+            if (acted) break;
 
             int c = event.mouse.x / w,
                 l = event.mouse.y / h;
+            if (!server)
+            {
+              c = 7 - c;
+              l = 7 - l;
+            }
 
             if (selecting)
             {
-              if (selecionar_peca(board, l, c, corjogador))
+              if (selecionar_peca(board, l, c, corjogada))
               {
-                //printf("select: %d %d\n", l, c);
                 sl = l;
                 sc = c;
                 acted = true;
+                printf("Selected piece: %c%d\n", 'a' + sc, (8 - sl));
               }
               else
                 printf("Invalid position!\n");
@@ -174,8 +292,11 @@ int main(int argc, char** argv)
               }
               else if (escolher_destino(board, sl, sc, l, c))
               {
-                //printf("dest: %d %d\n", l, c);
-                printf("%c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
+                sprintf(buffer, "%d %d %d %d", sl, sc, l, c);
+                write(sockfd, buffer, strlen(buffer) + 1);
+                //printf("buffer: (%s)\n", buffer);
+
+                printf("Movement: %c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
                 acted = true;
                 jogada++;
               }
@@ -196,14 +317,17 @@ int main(int argc, char** argv)
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
     // Render
-    draw_chess_board (0, 0, true);
-    draw_chess_pieces(0, 0, board, true);
+    draw_chess_board (0, 0, !server);
+    draw_chess_pieces(0, 0, board, !server);
 
     al_flip_display();
   }
 
   al_destroy_display(display);
   al_destroy_event_queue(eventQueue);
+
+  if (sockfd >= 0) close(sockfd);
+  if (serverfd >= 0) close(serverfd);
 
   return 0;
 }
