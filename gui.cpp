@@ -288,7 +288,7 @@ int main(int argc, char** argv)
                 printf("Deselected piece!\n");
                 acted = true;
               }
-              else if (escolher_destino(board, sl, sc, l, c))
+              else if (escolher_destino(board, sl, sc, l, c, movido))
               {
                 sprintf(buffer, "%d %d %d %d", sl, sc, l, c);
                 write(sockfd, buffer, strlen(buffer) + 1);
