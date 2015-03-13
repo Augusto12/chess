@@ -204,6 +204,7 @@ int main(int argc, char** argv)
   int jogada = 0;
   bool selecting = true;
   int sl, sc;
+  bool movido[6] = {};
 
   bool sair = false;
   while (!sair)
@@ -232,7 +233,7 @@ int main(int argc, char** argv)
         if (sl >= 0 && sl < 8 && sc >= 0 && sc < 8 &&
             l >= 0 && l < 8 && c >= 0 && c < 8)
         {
-          escolher_destino(board, sl, sc, l, c);
+          escolher_destino(board, sl, sc, l, c, movido);
           jogada++;
           //continue;
         }
