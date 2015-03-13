@@ -234,7 +234,6 @@ int main(int argc, char** argv)
         {
           escolher_destino(board, sl, sc, l, c);
           jogada++;
-          printf("jogada: %d\n", jogada);
           //continue;
         }
         else
