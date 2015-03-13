@@ -125,6 +125,7 @@ int main(int argc, char** argv)
   int jogada = 0;
   bool selecting = true;
   int sl, sc;
+  bool movido[6] = {};
 
   bool sair = false;
   while (!sair)
@@ -172,7 +173,7 @@ int main(int argc, char** argv)
                 printf("Deselected piece!\n");
                 acted = true;
               }
-              else if (escolher_destino(board, sl, sc, l, c))
+              else if (escolher_destino(board, sl, sc, l, c, movido))
               {
                 //printf("dest: %d %d\n", l, c);
                 printf("%c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
