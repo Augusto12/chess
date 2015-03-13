@@ -126,30 +126,23 @@ bool mover_bispo(char tabuleiro[8][9], int l1, int c1, int l2, int c2)
     Cor cor = cor_peca(tabuleiro, l1, c1);
     if (abs(l2 - l1) != abs(c2 - c1))
         return false;
-    if (l2 > l1)
-    {
-        if (c2 > c1)
-          for(int i = l1 + 1; i < l2; i++)
-              if (tabuleiro[i][c1 + i - l1] != ' ')
-                  return false;
-        else
-          for(int i = l1 + 1; i < l2; i++)
-              if (tabuleiro[i][c1 - i + l1] != ' ')
-                  return false;
-    }
-    else
-    {
-        if (c2 > c1)
-          for(int i = l1 - 1; i > l2; i--)
-              if (tabuleiro[i][c1 - i + l1] != ' ')
-                  return false;
-        else
-          for(int i = l1 - 1; i > l2; i--)
-              if (tabuleiro[i][c1 + i - l1] != ' ')
-                  return false;
-    }
-
-    if (tabuleiro[l2][c2] == ' ' || cor != cor_peca(tabuleiro, l2, c2))
+    if (l2 > l1 && c2 > c1)
+        for(int i = l1 + 1; i < l2; i++)
+            if (tabuleiro[i][c1 + i - l1] != ' ')
+                return false;
+    if (l2 > l1 && c2 < c1)
+        for(int i = l1 + 1; i < l2; i++)
+            if (tabuleiro[i][c1 - i + l1] != ' ')
+                return false;
+    if (l2 < l1 && c2 > c1)
+        for(int i = l1 - 1; i > l2; i--)
+            if (tabuleiro[i][c1 - i + l1] != ' ')
+                return false;
+    if (l2 < l1 && c2 < c1)
+        for(int i = l1 - 1; i > l2; i--)
+            if (tabuleiro[i][c1 + i - l1] != ' ')
+                return false;
+    if (tabuleiro[l2][c2] == ' ' || cor_peca(tabuleiro, l2, c2) != cor)
     {
         tabuleiro[l2][c2] = tabuleiro[l1][c1];
         tabuleiro[l1][c1] = ' ';
