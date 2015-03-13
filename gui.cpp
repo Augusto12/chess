@@ -227,14 +227,12 @@ int main(int argc, char** argv)
       {
         int l, c;
         //printf("buffer: %s\n", buffer);
-        printf("jogada: %d\n", jogada);
         sscanf(buffer, "%d %d %d %d", &sl, &sc, &l, &c);
         printf("Opponent movement: %c%d %c%d\n", 'a' + sc, (8 - sl), 'a' + c, (8 - l));
         if (sl >= 0 && sl < 8 && sc >= 0 && sc < 8 &&
             l >= 0 && l < 8 && c >= 0 && c < 8)
         {
-          board[l][c] = board[sl][sc];
-          board[sl][sc] = ' ';
+          escolher_destino(board, sl, sc, l, c);
           jogada++;
           printf("jogada: %d\n", jogada);
           //continue;
